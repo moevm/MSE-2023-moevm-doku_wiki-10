@@ -1,0 +1,7 @@
+base   xlsx2dw
+author moevm
+email  ydginster@gmail.com
+date   2023-03-06
+name   xlsx2dw plugin
+desc   Convert XLSX/ODS file to DokuWiki text
+url    https://github.com/moevm/MSE-2023-moevm-doku_wiki-10
