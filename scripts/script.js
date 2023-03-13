@@ -1,5 +1,5 @@
-import * as XLSX from './xlsx/xlsx.mjs';
-import * as cptable from './xlsx/cpexcel.full.mjs';
+import * as XLSX from '../xlsx/xlsx.mjs';
+import * as cptable from '../xlsx/cpexcel.full.mjs';
 XLSX.set_cptable(cptable);
 
 function xlsx2dwButtonOnClick() {
@@ -34,8 +34,8 @@ function parseTableFile(e) {
 
 function getDokuWikiTableSyntaxFromSheet(sheet){
     const options = {
-        FS: " | ", 
-        RS: " |\n| ", 
+        FS: " | ",
+        RS: " |\n| ",
         forceQuotes: true
     };
     let text = (("\n\n" + "| " + XLSX.utils.sheet_to_csv(sheet, options)).trim() + " |")
