@@ -26365,7 +26365,7 @@ function sheet_set_array_formula(ws/*:Worksheet*/, range, formula/*:string*/, dy
 	return ws;
 }
 
-var utils/*:any*/ = {
+var utils1/*:any*/ = {
 	encode_col: encode_col,
 	encode_row: encode_row,
 	encode_cell: encode_cell,
@@ -26533,42 +26533,20 @@ var __stream = {
 	to_csv: write_csv_stream,
 	set_readable: set_readable
 };
-export const version = XLSX.version;
-export {
-	parse_xlscfb,
-	parse_zip,
-	readSync as read,
-	readFileSync as readFile,
-	readFileSync,
-	writeSync as write,
-	writeFileSync as writeFile,
-	writeFileSync,
-	writeFileAsync,
-	writeSyncXLSX as writeXLSX,
-	writeFileSyncXLSX as writeFileXLSX,
-	utils,
-	set_fs,
-	set_cptable,
-	__stream as stream,
-	SSF,
-	CFB
-};
-export default {
-	parse_xlscfb,
-	parse_zip,
-	read: readSync,
-	readFile: readFileSync,
-	readFileSync,
-	write: writeSync,
-	writeFile: writeFileSync,
-	writeFileSync,
-	writeFileAsync,
-	writeXLSX: writeSyncXLSX,
-	writeFileXLSX: writeFileSyncXLSX,
-	utils,
-	set_fs,
-	set_cptable,
-	stream: __stream,
-	SSF,
-	CFB
-}
+const version = XLSX.version;
+XLSX.parse_xlscfb = parse_xlscfb;
+XLSX.parse_zip = parse_zip;
+XLSX.read = readSync;
+XLSX.readFile = readFileSync;
+XLSX.readFileSync = readFileSync;
+XLSX.write = writeSync;
+XLSX.writeFile = writeFileSync;
+XLSX.writeFileSync = writeFileSync;
+XLSX.writeFileAsync = writeFileAsync;
+XLSX.writeFileXLSX = writeFileSyncXLSX;
+XLSX.utils = utils1;
+XLSX.set_fs = set_fs;
+XLSX.set_cptable = set_cptable;
+XLSX.stream = __stream;
+XLSX.SSF = SSF;
+XLSX.CFB = CFB;
