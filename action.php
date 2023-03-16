@@ -30,7 +30,9 @@ class action_plugin_xlsx2dw extends ActionPlugin
             'title'  => $config['buttonTitle'],
             'icon'   => $config['buttonIcon'],
             'block'  => $config['buttonBlock'],
+            'open'   => $config['buttonOpen'],
+            'close'  => $config['buttonClose'],
+            'id'     => $config['buttonID']
         ];
     }
 }
-

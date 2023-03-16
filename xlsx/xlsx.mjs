@@ -19820,7 +19820,7 @@ if(cfb.FullPaths) {
 	prep_blob(cfb, 0);
 	WB = ({content: cfb}/*:any*/);
 }
-var /*::CompObjP, */WorkbookP/*:: :Workbook = XLSX.utils.book_new(); */;
+var WorkbookP = XLSX.utils.book_new();
 
 var _data/*:?any*/;
 if(CompObj) /*::CompObjP = */parse_compobj(CompObj);
@@ -26365,7 +26365,7 @@ function sheet_set_array_formula(ws/*:Worksheet*/, range, formula/*:string*/, dy
 	return ws;
 }
 
-var utils/*:any*/ = {
+var utils1/*:any*/ = {
 	encode_col: encode_col,
 	encode_row: encode_row,
 	encode_cell: encode_cell,
@@ -26533,8 +26533,25 @@ var __stream = {
 	to_csv: write_csv_stream,
 	set_readable: set_readable
 };
-export const version = XLSX.version;
-export {
+const version = XLSX.version;
+XLSX.parse_xlscfb = parse_xlscfb;
+XLSX.parse_zip = parse_zip;
+XLSX.read = readSync;
+XLSX.readFile = readFileSync;
+XLSX.readFileSync = readFileSync;
+XLSX.write = writeSync;
+XLSX.writeFile = writeFileSync;
+XLSX.writeFileSync = writeFileSync;
+XLSX.writeFileAsync = writeFileAsync;
+XLSX.writeFileXLSX = writeFileSyncXLSX;
+XLSX.utils = utils1;
+XLSX.set_fs = set_fs;
+XLSX.set_cptable = set_cptable;
+XLSX.stream = __stream;
+XLSX.SSF = SSF;
+XLSX.CFB = CFB;
+
+{/* export {
 	parse_xlscfb,
 	parse_zip,
 	readSync as read,
@@ -26552,8 +26569,8 @@ export {
 	__stream as stream,
 	SSF,
 	CFB
-};
-export default {
+}; */}
+{/* export default {
 	parse_xlscfb,
 	parse_zip,
 	read: readSync,
@@ -26571,4 +26588,4 @@ export default {
 	stream: __stream,
 	SSF,
 	CFB
-}
+} */}

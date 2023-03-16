@@ -1,12 +1,16 @@
-import * as XLSX from '../xlsx/xlsx.mjs';
-import * as cptable from '../xlsx/cpexcel.full.mjs';
-XLSX.set_cptable(cptable);
+/* DOKUWIKI:include  xlsx/xlsx.mjs */
+/* DOKUWIKI:include  xlsx/cpexcel.full.mjs */
+
+XLSX.set_cptable({
+    cptable,
+    utils
+});
 
 function xlsx2dwButtonOnClick() {
     let input = document.createElement('input');
     input.type = 'file';
     input.accept = ".xls,.xlsx,.ods";
-    input.onchange = (e) => { parseTableFile(e); }
+    input.onchange = (e) => parseTableFile(e);
     input.click();
 }
 
@@ -23,11 +27,14 @@ function parseTableFile(e) {
             let sheet = Object.values(sheets)[0];
             text = getDokuWikiTableSyntaxFromSheet(sheet);
         } catch (e) {
-            return;     // Something wrong
+            // Something wrong
+            console.log(e);
+            return;
         }
         let textArea = document.getElementById('wiki__text');
-        let cursorPosition = textArea.selectionStart || 0;
-        textArea.value = textArea.value.slice(0, cursorPosition) + text + textArea.value.slice(cursorPosition+1);
+        textArea.value = textArea.value.slice(0, textArea.selectionStart || 0) 
+            + text 
+            + textArea.value.slice(textArea.selectionEnd || 0);
     };
     reader.readAsArrayBuffer(file);
 }
@@ -46,4 +53,8 @@ function getDokuWikiTableSyntaxFromSheet(sheet){
     return text;
 }
 
-document.getElementById('xlsx2dwButton').addEventListener('click', xlsx2dwButtonOnClick);
+jQuery(document).ready(() => {
+    jQuery('#xlsx2dw_btn').click(() => {
+        xlsx2dwButtonOnClick();
+    });
+});
