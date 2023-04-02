@@ -1,5 +1,6 @@
-/* DOKUWIKI:include  xlsx/xlsx.mjs */
-/* DOKUWIKI:include  xlsx/cpexcel.full.mjs */
+/* DOKUWIKI:include  packages/exceljs/exceljs.js */
+/* DOKUWIKI:include  packages/xlsx/xlsx.mjs */
+/* DOKUWIKI:include  packages/xlsx/cpexcel.full.mjs */
 
 XLSX.set_cptable({
     cptable,
@@ -15,42 +16,130 @@ function xlsx2dwButtonOnClick() {
 }
 
 function parseTableFile(e) {
-    let file = e.target.files?.[0];
+    var file = e.target.files?.[0];
     if(!file)
-        return;
+        throw "File is undefined or unselected.";
+    let fileName = file.name;
+
     let reader = new FileReader();
-    reader.onload = function(e) {
-        let text = "";
-        try {
-            let workbook = XLSX.read(e.target.result);
-            let sheets = workbook.Sheets;
-            let sheet = Object.values(sheets)[0];
-            text = getDokuWikiTableSyntaxFromSheet(sheet);
-        } catch (e) {
-            // Something wrong
-            console.log(e);
-            return;
+    reader.onload = async function(e) {
+        let formattedTable;
+        switch(fileName.slice(fileName.lastIndexOf(".")+1).toLowerCase()) {
+            case "xlsx":
+                formattedTable = await getFormattedTableFromXLSX(e.target.result);
+                break;
+            case "xls":
+                formattedTable = await getFormattedTableFromXLS(e.target.result);
+                break;
+            case "ods":
+                formattedTable = await getFormattedTableFromODS(e.target.result);
+                break;
+            default:
+                throw "Wrong file format.";
         }
-        let textArea = document.getElementById('wiki__text');
-        textArea.value = textArea.value.slice(0, textArea.selectionStart || 0) 
-            + text 
-            + textArea.value.slice(textArea.selectionEnd || 0);
+        let text = getTextFromFormattedTable(formattedTable);
+        insertTextToDokuWiki(text);
     };
     reader.readAsArrayBuffer(file);
 }
 
-function getDokuWikiTableSyntaxFromSheet(sheet){
-    const options = {
-        FS: " | ",
-        RS: " |\n| ",
-        forceQuotes: true
-    };
-    let text = (("\n\n" + "| " + XLSX.utils.sheet_to_csv(sheet, options)).trim() + " |")
-        .replaceAll("| \"", "| ")
-        .replaceAll("\" |", " |") + "\n\n";
-    // Возможная дальнейшая обработка text
-    // будет выполняться в этой функции.
-    return text;
+class Cell {
+    constructor(cell) {
+        switch(cell.constructor.name) {
+            case "Cell":   // ExcelJS Cell Object
+                this.address = cell._address || undefined;
+                this.value = cell.value ?? "";
+
+                this.fontName = cell.style.font?.name;
+                this.fontSize = cell.style.font?.size;
+                this.fontColor = "#" + (cell.style.font?.color?.argb?.slice(2) || "000000");
+
+                this.isBold = cell.style.font?.bold || false;
+                this.isItalic = cell.style.font?.italic || false;
+                this.isUnderline = cell.style.font?.underline || false;
+                this.isStrike = cell.style.font?.strike || false;
+
+                this.alignmentHorizontal = cell.style?.alignment?.horizontal || "left";
+
+                this.isMerged = cell.isMerged || false;
+                this.mergeCount = cell._mergeCount || 0;
+                this.mergedBottom = false;      // не определено
+                this.mergedRight = false;       // не определено
+                break;
+            case "xls":     // WIP
+            case "ods":     // WIP
+            default:        // ???
+                this.address = undefined;
+                break;
+        }
+    }
+}
+
+// Из ODS в XLSX при помощи библиотеки xlsx
+async function getFormattedTableFromODS(file) {
+    /*
+    Здесь будет очень большая функция, которая
+    превращает ODS в форматированную таблицу
+    со стилями. Пока что здесь будет вызов уже
+    существующей функции для XLSX.
+    */
+    let xlsxWorkbook = XLSX.read(file);
+    let xlsxRawTable = XLSX.write(xlsxWorkbook, {type: 'binary', bookType: 'xlsx'});
+    return await getFormattedTableFromXLSX(xlsxRawTable);
+}
+
+// Из XLS в XLSX при помощи библиотеки xlsx
+async function getFormattedTableFromXLS(file) {
+    /*
+    Здесь будет очень большая функция, которая
+    превращает XLS в форматированную таблицу
+    со стилями. Пока что здесь будет вызов уже
+    существующей функции для XLSX.
+    */
+    let xlsxWorkbook = XLSX.read(file);
+    let xlsxRawTable = XLSX.write(xlsxWorkbook, {type: 'binary', bookType: 'xlsx'});
+    return await getFormattedTableFromXLSX(xlsxRawTable);
+}
+
+// Работает при помощи библиотеки ExcelJS
+async function getFormattedTableFromXLSX(file) {
+    let workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(file);
+    let worksheet = workbook.worksheets[0];
+    let formattedTable = [];
+    worksheet.eachRow(function(row, rowNumber) {
+        let formattedRow = [];
+        row.eachCell(function(cell, colNumber) {
+            formattedRow.push(new Cell(cell));
+        });
+        formattedTable.push(formattedRow);
+    });
+    return formattedTable;
+}
+
+
+// Реализовать вывод стилей в этой функции.
+function getTextFromFormattedTable(formattedTable) {
+    return formattedTable
+        .map(formattedRow => 
+            "| " +
+            formattedRow
+                .map(cell => cell.value)
+                .join(" | ") + 
+            " |"
+        ).join("\n");
+}
+
+function insertTextToDokuWiki(text) {
+    let textArea = jQuery('#wiki__text');
+    let cursorPosition = textArea[0].selectionStart || 0;
+    let sourceText = textArea.val();
+    textArea.val(
+        sourceText.slice(0, cursorPosition) + 
+        text + 
+        sourceText.slice(cursorPosition)
+    );
+    return;
 }
 
 jQuery(document).ready(() => {
