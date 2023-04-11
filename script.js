@@ -165,7 +165,7 @@ async function getFormattedTableFromODS(file) {
                 // Необходимо записать объединённые клетки по соответствующим индексам
                 // справа и снизу от главной клетки.
                 for(let i = 0; i < mergedRows; i++) {
-                    if(i > 0)
+                    if(formattedTable[rowIndex+i] === undefined)
                         formattedTable.push(new Array(0));
                     for(let j = 0; j < mergedColumns; j++) {
                         formattedTable[rowIndex+i][columnIndex+j] = {
