@@ -214,9 +214,9 @@ async function getFormattedTableFromXLSX(file) {
         while(formattedTable.length < rowNumber-1) 
             formattedTable.push([]);
         let formattedRow = [];
-        row.eachCell(function(cell, colNumber) {
+        row._cells.forEach(function(cell, colNumber) {
             // Дозаполнить строку пустыми клетками
-            while(formattedRow.length < colNumber-1)
+            while(formattedRow.length < colNumber) 
                 formattedRow.push({isEmpty: true});
             // Рассматриваем клетку
             let formattedCell = {};
@@ -248,7 +248,7 @@ async function getFormattedTableFromXLSX(file) {
                     isStrike: cell.style.font?.strike || false,
                     alignmentHorizontal: cell.style?.alignment?.horizontal || "left"
                 };
-            } else if(formattedTable[rowNumber-2]?.[colNumber-1]?.isMergedFirstColumn) {
+            } else if(formattedTable[rowNumber-2]?.[colNumber]?.isMergedFirstColumn) {
                 // c) Если клетка находится в главном столбце
                 formattedCell = {
                     isEmpty: true,
