@@ -224,7 +224,7 @@ async function getFormattedTableFromXLSX(file) {
                 // a) Если это обычная клетка с данными
                 formattedCell = {
                     value: cell.value ?? "",
-                    isEmpty: false,
+                    isEmpty: !cell.value?.length,
                     isMerged: false,
                     isMergedFirstColumn: false,
     
@@ -238,7 +238,7 @@ async function getFormattedTableFromXLSX(file) {
                 // b) Если _mergeCount > 0, то это главная клетка
                 formattedCell = {
                     value: cell.value ?? "",
-                    isEmpty: false,
+                    isEmpty: !cell.value?.length,
                     isMerged: true,
                     isMergedFirstColumn: true,
     
