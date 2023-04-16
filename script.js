@@ -271,16 +271,51 @@ async function getFormattedTableFromXLSX(file) {
     return formattedTable;
 }
 
-// Реализовать вывод стилей в этой функции.
+function setStyle(cell) {
+    let styledCell = cell.value;
+
+    if (cell.isBold) styledCell = `**${styledCell}**`;
+    if (cell.isItalic) styledCell = `\/\/${styledCell}\/\/`;
+    if (cell.isUnderline) styledCell = `__${styledCell}__`;
+    if (cell.isStrike) styledCell = `<del>${styledCell}</del>`;
+
+    if (cell.isMerged) {
+        if (cell.isMergedFirstColumn) {
+            if (!cell.isEmpty) return '  ' + styledCell + '  ';
+            else return ':::';
+        } else {
+            return '';
+        }
+    }
+
+    if (!cell.value && !cell.isMerged) {
+        return ' ';
+    }
+
+    switch(cell.alignmentHorizontal) {
+        case "left":
+            styledCell = styledCell + '  ';
+            break;
+        case "center":
+            styledCell = '  ' + styledCell + '  ';
+            break;
+        case "right":
+            styledCell = '  ' + styledCell;
+            break;
+    }
+    return styledCell;
+}
+
+// Вывод стилей.
 function getTextFromFormattedTable(formattedTable) {
     return formattedTable
-        .map(formattedRow => 
-            "| " +
+        .map(formattedRow => {
+            return "|" +
             formattedRow
-                .map(cell => cell.value)
-                .join(" | ") + 
-            " |"
-        ).join("\n");
+                .map((cell) => setStyle(cell))
+                .join("|") + 
+            "|";
+        }).join("\n");
 }
 
 function insertTextToDokuWiki(text) {
