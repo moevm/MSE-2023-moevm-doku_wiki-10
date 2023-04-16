@@ -238,7 +238,7 @@ async function getFormattedTableFromXLSX(file) {
                 // b) Если _mergeCount > 0, то это главная клетка
                 formattedCell = {
                     value: cell.value ?? "",
-                    isEmpty: !cell.value?.length,
+                    isEmpty: false,     // Чтобы отличить главную от присоединённой на главном столбце
                     isMerged: true,
                     isMergedFirstColumn: true,
     
