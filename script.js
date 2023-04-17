@@ -214,9 +214,9 @@ async function getFormattedTableFromXLSX(file) {
         while(formattedTable.length < rowNumber-1) 
             formattedTable.push([]);
         let formattedRow = [];
-        row.eachCell(function(cell, colNumber) {
+        row._cells.forEach(function(cell, colNumber) {
             // Дозаполнить строку пустыми клетками
-            while(formattedRow.length < colNumber-1)
+            while(formattedRow.length < colNumber) 
                 formattedRow.push({isEmpty: true});
             // Рассматриваем клетку
             let formattedCell = {};
@@ -224,7 +224,7 @@ async function getFormattedTableFromXLSX(file) {
                 // a) Если это обычная клетка с данными
                 formattedCell = {
                     value: cell.value ?? "",
-                    isEmpty: false,
+                    isEmpty: !cell.value?.length,
                     isMerged: false,
                     isMergedFirstColumn: false,
     
@@ -238,7 +238,7 @@ async function getFormattedTableFromXLSX(file) {
                 // b) Если _mergeCount > 0, то это главная клетка
                 formattedCell = {
                     value: cell.value ?? "",
-                    isEmpty: false,
+                    isEmpty: false,     // Чтобы отличить главную от присоединённой на главном столбце
                     isMerged: true,
                     isMergedFirstColumn: true,
     
@@ -248,7 +248,7 @@ async function getFormattedTableFromXLSX(file) {
                     isStrike: cell.style.font?.strike || false,
                     alignmentHorizontal: cell.style?.alignment?.horizontal || "left"
                 };
-            } else if(formattedTable[rowNumber-2]?.[colNumber-1]?.isMergedFirstColumn) {
+            } else if(formattedTable[rowNumber-2]?.[colNumber]?.isMergedFirstColumn) {
                 // c) Если клетка находится в главном столбце
                 formattedCell = {
                     isEmpty: true,
@@ -271,16 +271,51 @@ async function getFormattedTableFromXLSX(file) {
     return formattedTable;
 }
 
-// Реализовать вывод стилей в этой функции.
+function setStyle(cell) {
+    let styledCell = cell.value;
+
+    if (cell.isBold) styledCell = `**${styledCell}**`;
+    if (cell.isItalic) styledCell = `\/\/${styledCell}\/\/`;
+    if (cell.isUnderline) styledCell = `__${styledCell}__`;
+    if (cell.isStrike) styledCell = `<del>${styledCell}</del>`;
+
+    if (cell.isMerged) {
+        if (cell.isMergedFirstColumn) {
+            if (!cell.isEmpty) return '  ' + styledCell + '  ';
+            else return ':::';
+        } else {
+            return '';
+        }
+    }
+
+    if (!cell.value && !cell.isMerged) {
+        return ' ';
+    }
+
+    switch(cell.alignmentHorizontal) {
+        case "left":
+            styledCell = styledCell + '  ';
+            break;
+        case "center":
+            styledCell = '  ' + styledCell + '  ';
+            break;
+        case "right":
+            styledCell = '  ' + styledCell;
+            break;
+    }
+    return styledCell;
+}
+
+// Вывод стилей.
 function getTextFromFormattedTable(formattedTable) {
     return formattedTable
-        .map(formattedRow => 
-            "| " +
+        .map(formattedRow => {
+            return "|" +
             formattedRow
-                .map(cell => cell.value)
-                .join(" | ") + 
-            " |"
-        ).join("\n");
+                .map((cell) => setStyle(cell))
+                .join("|") + 
+            "|";
+        }).join("\n");
 }
 
 function insertTextToDokuWiki(text) {
