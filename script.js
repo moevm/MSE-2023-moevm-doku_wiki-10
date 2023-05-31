@@ -63,7 +63,10 @@ function formattedTablePostroutine(table) {
                 isItalic: cell?.isItalic ?? false,
                 isUnderline: cell?.isUnderline ?? false,
                 isStrike: cell?.isStrike ?? false,
-                alignmentHorizontal: cell?.alignmentHorizontal ?? "left"
+                alignmentHorizontal: cell?.alignmentHorizontal ?? "left",
+
+                colorFont: (cell?.colorFont && cell.colorFont.length === 7) ? cell.colorFont : "#000000",
+                colorBackground: (cell?.colorBackground && cell.colorBackground.length === 7) ? cell.colorBackground : "#FFFFFF"
             };
         });
     });
@@ -79,6 +82,8 @@ async function getFormattedTableFromODS(file) {
     // 2. Конвертировать строку с XML в JSON-объект.
     let tableJSON = JSON.parse(xmlToJson(tableStringXML));
 
+    console.log(tableJSON);
+
     // 3. Получить стили клеток с необходимыми полями в виде map-объекта.
     let styleMap = new Map(tableJSON["office:document-content"]["office:automatic-styles"]["style:style"].map(style => [style["-style:name"], {
         isBold: (style["style:text-properties"]?.["-fo:font-weight"] === "bold"),
@@ -87,7 +92,9 @@ async function getFormattedTableFromODS(file) {
         isStrike: (style["style:text-properties"]?.["-style:text-line-through-style"] === "solid"),
         alignmentHorizontal: (style["style:paragraph-properties"]?.["-fo:text-align"] === "start") ? "left"
             : (style["style:paragraph-properties"]?.["-fo:text-align"] === "end") ? "right"
-            : style["style:paragraph-properties"]?.["-fo:text-align"] ?? "left"
+            : style["style:paragraph-properties"]?.["-fo:text-align"] ?? "left",
+        colorFont: style["style:text-properties"]?.["-fo:color"] ?? "#000000",
+        colorBackground: style["style:table-cell-properties"]?.["-fo:background-color"] ?? "#FFFFFF",
     }]));
 
     // 4. Получить данные клеток из JSON-объекта в виде двумерного массива.
@@ -208,6 +215,53 @@ async function getFormattedTableFromXLSX(file) {
     let worksheet = workbook.worksheets[0];
     let formattedTable = [];
 
+    // 1.1. Сохранить из таблицы даныне о цветах.
+    // Это нужно для в случаях, если цвет был выбран
+    // из предлагаемых цветовых тем.
+    let themesXML = workbook._themes?.theme1 ?? "";
+    let themesJSON = JSON.parse(xmlToJson(themesXML));
+    let colorsJSON = Object.values(themesJSON
+        ?.["a:theme"]
+        ?.["a:themeElements"]
+        ?.["a:clrScheme"] ?? {})
+        .map((item) => {
+            let color = item["a:srgbClr"]?.["-val"] 
+                ?? item["a:sysClr"]?.["-lastClr"] 
+                ?? undefined;
+            if(!!color)
+                color = "#" + color;
+            return color;
+        }).slice(1);
+
+    // 1.2. Функция для определения цвета.
+    // Проще её объявить и описать здесь,
+    // чтобы не писать много в пунктах 2a, 2b.
+    function getColorXLSX(cell, type) {
+        switch(type) {
+            case "font":
+                let fontStyle = cell.style.font?.color;
+                if(fontStyle?.argb) 
+                    return "#" + (cell.style.font.color.argb.slice(2) || "000000");
+                if(fontStyle?.theme !== undefined) {
+                    if(fontStyle.theme === 0)
+                        return "#000000";
+                    return colorsJSON[fontStyle.theme];
+                }
+                return undefined;
+            default:
+            case "background":
+                let fgStyle = cell.style.fill?.fgColor;
+                if(fgStyle?.argb)
+                    return "#" + (cell.style.fill?.fgColor?.argb?.slice(2) || "FFFFFF");
+                if(fgStyle?.theme !== undefined) {
+                    if(fgStyle.theme === 0)
+                        return "#FFFFFF";
+                    return colorsJSON[fgStyle.theme];
+                }
+                return undefined;
+        }
+    }
+
     // 2. Обойти все клетки таблицы и выделить необходимые данные для Dokuwiki.
     worksheet.eachRow(function(row, rowNumber) {
         // Дозаполнить таблицу пустыми строки
@@ -232,7 +286,10 @@ async function getFormattedTableFromXLSX(file) {
                     isItalic: cell.style.font?.italic || false,
                     isUnderline: cell.style.font?.underline || false,
                     isStrike: cell.style.font?.strike || false,
-                    alignmentHorizontal: cell.style?.alignment?.horizontal || "left"
+                    alignmentHorizontal: cell.style?.alignment?.horizontal || "left",
+
+                    colorFont: getColorXLSX(cell, "font"),
+                    colorBackground: getColorXLSX(cell, "background")
                 };
             } else if((cell?._mergeCount ?? 0) > 0) {
                 // b) Если _mergeCount > 0, то это главная клетка
@@ -246,7 +303,10 @@ async function getFormattedTableFromXLSX(file) {
                     isItalic: cell.style.font?.italic || false,
                     isUnderline: cell.style.font?.underline || false,
                     isStrike: cell.style.font?.strike || false,
-                    alignmentHorizontal: cell.style?.alignment?.horizontal || "left"
+                    alignmentHorizontal: cell.style?.alignment?.horizontal || "left",
+
+                    colorFont: getColorXLSX(cell, "font"),
+                    colorBackground: getColorXLSX(cell, "background")
                 };
             } else if(formattedTable[rowNumber-2]?.[colNumber]?.isMergedFirstColumn) {
                 // c) Если клетка находится в главном столбце
