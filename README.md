@@ -4,7 +4,7 @@ The XLSX2DW plugin for DokuWiki makes it easy to import XLS, XLSX or ODS tables 
 The plugin keeps the styles, merged cells and colors of your original table.
 
 ## Manual plugin installation
-1. Clone repository (via SSH или HTTPS):
+1. Clone repository (via SSH or HTTPS):
     <br>SSH: 
     > `git clone git@github.com:moevm/MSE-2023-moevm-doku_wiki-10.git`
 
@@ -28,7 +28,7 @@ After all files have been transferred, the `/xlsx2dw` directory should look like
 3. Choose a table file. You can select example table from `/_test/test-tables/` folder.
    ![Alt text](./screenshots/selecting_tables.png?raw=true "Select a table")
 
-4. Selected table is converted to ВokuWiki syntax.
+4. Selected table is converted to DokuWiki syntax.
    ![Alt text](./screenshots/table_in_dokusyntax.png?raw=true "DokuWiki syntax")
 
 5. The result is shown in the screenshot below.
