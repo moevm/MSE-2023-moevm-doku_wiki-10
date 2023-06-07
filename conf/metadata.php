@@ -4,5 +4,3 @@
  *
  * @author moevm <ydginster@gmail.com>
  */
-
-//$meta['fixme'] = array('string');
