@@ -72,19 +72,18 @@ function formattedTablePostroutine(table) {
     });
 }
 
-// Из ODS в XLSX при помощи библиотеки xlsx
+// From ODS to XLSX using the xlsx library
 async function getFormattedTableFromODS(file) {
-    // 1. Представить ODS-файл как ZIP-архив и получить из него файл content.xml.
-    let zip = new JSZip();
+    // 1. Present the ODS file as a ZIP archive and get the content.xml file from it.    let zip = new JSZip();
     await zip.loadAsync(file);
     let tableStringXML = await zip.files["content.xml"].async('text');
 
-    // 2. Конвертировать строку с XML в JSON-объект.
+    // 2. Convert XML string to JSON object.
     let tableJSON = JSON.parse(xmlToJson(tableStringXML));
 
     console.log(tableJSON);
 
-    // 3. Получить стили клеток с необходимыми полями в виде map-объекта.
+    // 3. Get cell styles with the required fields as a map object.
     let styleMap = new Map(tableJSON["office:document-content"]["office:automatic-styles"]["style:style"].map(style => [style["-style:name"], {
         isBold: (style["style:text-properties"]?.["-fo:font-weight"] === "bold"),
         isItalic: (style["style:text-properties"]?.["-fo:font-style"] === "italic"),
@@ -97,14 +96,14 @@ async function getFormattedTableFromODS(file) {
         colorBackground: style["style:table-cell-properties"]?.["-fo:background-color"] ?? "#FFFFFF",
     }]));
 
-    // 4. Получить данные клеток из JSON-объекта в виде двумерного массива.
-    // Для этого необходимо Пройтись и переделать из неравномерного массива
-    // (возможна бесконечная вложенность через поле "#item") в двумерный.
+    // 4. Get the cell data from the JSON object as a two-dimensional array.
+    // To do this, iterate and remake from a non-uniform array
+    // (infinite nesting through the "#item" field is possible) into a two-dimensional one.
     let table = [];
     let recursiveCellExportODS = function(row, exportParsedRow) {
-        // a) Проверить ряд на корректность - это обычный ряд ненулевой длины,
-        // и не индикатор в конце рядов, показывающий стиль на "бесконечности"
-        // (обычно показатель строк более 10^6).
+        // a) Check the series for correctness - this is a regular series of non-zero length,
+        // and no indicator at the end of the rows, showing the style at "infinity"
+        // (usually row count over 10^6).
         if((Number(row["-table:number-rows-repeated"]) || 1) > 10**6)
             return;
         row = [].concat(...[row["table:covered-table-cell"], row["table:table-cell"]].map(row => {
@@ -116,14 +115,14 @@ async function getFormattedTableFromODS(file) {
         }));
         if(row.length === 0)
             return;
-        // b) Для каждой клетки в массиве.
+        // b) For each cell in the array.
         row.forEach(cell => {
             if(cell["#item"] !== undefined) {
-                // c) Для "#item" возможна любая глубина, поэтому
-                // рекурсивно вызываем функцию для этого объекта.
+                // c) "#item" can be any depth, so
+                // recursively call the function on this object.
                 recursiveCellExportODS(cell["#item"], exportParsedRow);
             } else if(
-                // d) Если это обычная клетка, а не индикатор в конце массива (см. пункт а).
+                // d) If it's a regular cell, not an indicator at the end of the array (see point a).
                 ((cell["-self-closing"] !== undefined) || (cell["-office:value-type"] !== undefined)) &&
                 ((Number(cell["-table:number-columns-repeated"]) || 1) < 10**3)
             ) {
@@ -136,41 +135,41 @@ async function getFormattedTableFromODS(file) {
         recursiveCellExportODS(row, parsedRow);
         table.push(parsedRow);
     }));
-    // 5. Удалить крайние пустые строки.
+    // 5. Remove extreme empty lines.
     while((table.length > 0) && (table[table.length-1].length === 0))
         table.pop();
 
-    // 6. Выделить необходимые данные для Dokuwiki.
+    // 6. Allocate the necessary data for Dokuwiki.
     let formattedTable = [];
     table.forEach((row, rowIndex) => {
         // Существует ли уже такой ряд? Если нет, то внести в массив рядов.
         // Поскольку номера рядов не уменьшаются, то считаю допустимым
         // использовать push НОВОГО пустого массива.
-        if(formattedTable[rowIndex] === undefined) 
+        if(formattedTable[rowIndex] === undefined)
             formattedTable.push(new Array(0));
         row.forEach((cell, columnIndex) => {
             if(formattedTable[rowIndex]?.[columnIndex] !== undefined) {
-                // a) На этой позиции уже записана клетка в результате добавлений.
-                // (см. реализацию ниже в пункте "c").
+                // a) A cell has already been written at this position as a result of additions.
+                // (see implementation below in "c").
                 return;
             }
             let mergedColumns = Number(cell["-table:number-columns-spanned"]) || 1;
             let mergedRows = Number(cell["-table:number-rows-spanned"]) || 1;
             if((mergedColumns === 1) && (mergedRows === 1)) {
-                // b) Одиночная клетка.
+                // b) Single cell.
                 formattedTable[rowIndex][columnIndex] = {
                     ...{
                         value: cell["text:p"] ?? "",
                         isEmpty: !cell["text:p"],
                         isMerged: false,
                         isMergedFirstColumn: false
-                    }, 
+                    },
                     ...(styleMap.get(cell["-table:style-name"]) ?? {})
                 };
             } else {
-                // c) Оставшийся вариант - объединённая клетка.
-                // Необходимо записать объединённые клетки по соответствующим индексам
-                // справа и снизу от главной клетки.
+                // c) The remaining option is a merged cell.
+                // It is necessary to write the merged cells according to the corresponding indices
+                // to the right and bottom of the main cell.
                 for(let i = 0; i < mergedRows; i++) {
                     if(formattedTable[rowIndex+i] === undefined)
                         formattedTable.push(new Array(0));
@@ -181,7 +180,7 @@ async function getFormattedTableFromODS(file) {
                                 isEmpty: (i+j === 0) ? !cell["text:p"] : true,
                                 isMerged: true,
                                 isMergedFirstColumn: (j === 0)
-                            }, 
+                            },
                             ...(styleMap.get(cell["-table:style-name"]) ?? {})
                         };
                     }
@@ -193,31 +192,31 @@ async function getFormattedTableFromODS(file) {
     return formattedTable;
 }
 
-// Из XLS в XLSX при помощи библиотеки xlsx
+// From XLS to XLSX using the xlsx library
 async function getFormattedTableFromXLS(file) {
-    /*
-    Здесь должна быть функция, которая
-    превращает XLS в форматированную таблицу
-    со стилями. Пока что здесь будет вызов уже
-    существующей функции для XLSX после конвертации
-    в этот формат, с потерей стилей.
-    */
+    /**
+      There should be a function here
+      turns XLS into a formatted table
+      with styles. For now, there will be a challenge already
+      existing function for XLSX after conversion
+      to this format, with the loss of styles.
+     */
     let xlsxWorkbook = XLSX.read(file);
     let xlsxRawTable = XLSX.write(xlsxWorkbook, {type: 'binary', bookType: 'xlsx'});
     return await getFormattedTableFromXLSX(xlsxRawTable);
 }
 
-// Работает при помощи библиотеки ExcelJS
+// Works with the ExcelJS library
 async function getFormattedTableFromXLSX(file) {
-    // 1. Открыть XLSX-таблицу.
+    // 1. Open the XLSX table.
     let workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(file);
     let worksheet = workbook.worksheets[0];
     let formattedTable = [];
 
-    // 1.1. Сохранить из таблицы даныне о цветах.
-    // Это нужно для в случаях, если цвет был выбран
-    // из предлагаемых цветовых тем.
+    // 1.1. Save from the table today about colors.
+    // This is needed for cases where the color was selected
+    // from the suggested color themes.
     let themesXML = workbook._themes?.theme1 ?? "";
     let themesJSON = JSON.parse(xmlToJson(themesXML));
     let colorsJSON = Object.values(themesJSON
@@ -225,22 +224,22 @@ async function getFormattedTableFromXLSX(file) {
         ?.["a:themeElements"]
         ?.["a:clrScheme"] ?? {})
         .map((item) => {
-            let color = item["a:srgbClr"]?.["-val"] 
-                ?? item["a:sysClr"]?.["-lastClr"] 
+            let color = item["a:srgbClr"]?.["-val"]
+                ?? item["a:sysClr"]?.["-lastClr"]
                 ?? undefined;
             if(!!color)
                 color = "#" + color;
             return color;
         }).slice(1);
 
-    // 1.2. Функция для определения цвета.
-    // Проще её объявить и описать здесь,
-    // чтобы не писать много в пунктах 2a, 2b.
+    // 1.2. A function to define a color.
+    // It's easier to declare and describe it here,
+    // so as not to write a lot in paragraphs 2a, 2b.
     function getColorXLSX(cell, type) {
         switch(type) {
             case "font":
                 let fontStyle = cell.style.font?.color;
-                if(fontStyle?.argb) 
+                if(fontStyle?.argb)
                     return "#" + (cell.style.font.color.argb.slice(2) || "000000");
                 if(fontStyle?.theme !== undefined) {
                     if(fontStyle.theme === 0)
@@ -262,26 +261,26 @@ async function getFormattedTableFromXLSX(file) {
         }
     }
 
-    // 2. Обойти все клетки таблицы и выделить необходимые данные для Dokuwiki.
+    // 2. Walk through all the cells in the table and extract the necessary data for Dokuwiki.
     worksheet.eachRow(function(row, rowNumber) {
-        // Дозаполнить таблицу пустыми строки
-        while(formattedTable.length < rowNumber-1) 
+        // Fill the table with empty rows
+        while(formattedTable.length < rowNumber-1)
             formattedTable.push([]);
         let formattedRow = [];
         row._cells.forEach(function(cell, colNumber) {
-            // Дозаполнить строку пустыми клетками
-            while(formattedRow.length < colNumber) 
+            // Fill the line with empty cells
+            while(formattedRow.length < colNumber)
                 formattedRow.push({isEmpty: true});
-            // Рассматриваем клетку
+            // Consider the cell
             let formattedCell = {};
             if(!cell.isMerged) {
-                // a) Если это обычная клетка с данными
+                // a) If it's a regular cell with data
                 formattedCell = {
                     value: cell.value ?? "",
                     isEmpty: !cell.value?.length,
                     isMerged: false,
                     isMergedFirstColumn: false,
-    
+
                     isBold: cell.style.font?.bold || false,
                     isItalic: cell.style.font?.italic || false,
                     isUnderline: cell.style.font?.underline || false,
@@ -292,13 +291,13 @@ async function getFormattedTableFromXLSX(file) {
                     colorBackground: getColorXLSX(cell, "background")
                 };
             } else if((cell?._mergeCount ?? 0) > 0) {
-                // b) Если _mergeCount > 0, то это главная клетка
+                // b) If _mergeCount > 0, then this is the main cell
                 formattedCell = {
                     value: cell.value ?? "",
-                    isEmpty: false,     // Чтобы отличить главную от присоединённой на главном столбце
+                    isEmpty: false,     // To distinguish main from attached on main column
                     isMerged: true,
                     isMergedFirstColumn: true,
-    
+
                     isBold: cell.style.font?.bold || false,
                     isItalic: cell.style.font?.italic || false,
                     isUnderline: cell.style.font?.underline || false,
@@ -309,14 +308,14 @@ async function getFormattedTableFromXLSX(file) {
                     colorBackground: getColorXLSX(cell, "background")
                 };
             } else if(formattedTable[rowNumber-2]?.[colNumber]?.isMergedFirstColumn) {
-                // c) Если клетка находится в главном столбце
+                // c) If the cell is in the main column
                 formattedCell = {
                     isEmpty: true,
                     isMerged: true,
                     isMergedFirstColumn: true,
                 };
             } else {
-                // d) Последний вариант - клетка находится не в главном столбце
+                // d) The last option - the cell is not in the main column
                 formattedCell = {
                     isEmpty: true,
                     isMerged: true,
@@ -366,14 +365,14 @@ function setStyle(cell) {
     return styledCell;
 }
 
-// Вывод стилей.
+// Output styles.
 function getTextFromFormattedTable(formattedTable) {
     return formattedTable
         .map(formattedRow => {
             return "|" +
             formattedRow
                 .map((cell) => setStyle(cell))
-                .join("|") + 
+                .join("|") +
             "|";
         }).join("\n");
 }
@@ -383,8 +382,8 @@ function insertTextToDokuWiki(text) {
     let cursorPosition = textArea[0].selectionStart || 0;
     let sourceText = textArea.val();
     textArea.val(
-        sourceText.slice(0, cursorPosition) + 
-        text + 
+        sourceText.slice(0, cursorPosition) +
+        text +
         sourceText.slice(cursorPosition)
     );
     return;
