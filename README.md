@@ -1,32 +1,39 @@
-# MSE-2023-template
-Шаблонный проект для гитхаба на курсе Промышленная разработка ПО
+# XLSX2DW Plugin for DokuWiki
+The XLSX2DW plugin for DokuWiki makes it easy to import XLS, XLSX or ODS tables to a page.
 
-## Полезные ссылки по проекту 
-(каждый проект заполняет под себя):
-  - [База знаний по проекту](https://miro.com/app/board/uXjVPjK_iOw=/?share_link_id=115273625923)
-  - 
+The plugin keeps the styles, merged cells and colors of your original table.
 
-## Git-Flow:
-  - У нас есть 3 ветки: main, dev, test
-  - Каждая feature в отдельной ветке, которая создаётся из dev
-  - При старте работ над feature делаетс 2 PR: dev и test, а задача переводится в *in progress*
-  - После завершения разработки, задача переходит в статус *in review*
-  - Ревью осуществляется в ветке test, исправления заливатся в feature-ветку, после ревью ветка мёржится в test и задача переходит в статус *done*
-  - При релизе запланированных фич, они поочерёдно мёржатся в dev со squash коммитов
-  - После того, как все нужные фичи попали в dev, делается релизная ветка в которую коммитится up версии и делается 2 PR: dev и master
-  - После того, как PR будет влит в мастер на него ставится тег с версией
+## Plugin installation
+1.1. Download from DokuWiki Extension Manager ([Plugin page link](https://www.dokuwiki.org/plugin:xlsx2dw)).
 
-### Версионирование
-Каждую доставку вашего ПО маркируйте следующей схемой: A.B.C, где A — это глобальные изменения, ломающие обратную совместимость; B — доставка новых функций (работоспособность прошлых версий, соответственно, сохраняется); C — мелкие правки, патчи и горячие фиксы
+1.2. Clone repository (via SSH or HTTPS) or download from DokuWiki Extension Manager:
+- SSH: `git clone git@github.com:moevm/MSE-2023-moevm-doku_wiki-10.git`
+- HTTPS: `git clone https://github.com/moevm/MSE-2023-moevm-doku_wiki-10.git`
 
+Move all plugin files to `dokuwiki-installation-directory/lib/plugins/xlsx2dw/`
+- TIP: `dokuwiki-installation-directory` is folder of your local DokuWiki.
 
-### Создание feature-ветки
-  - На доске проекта создаётся item в статусе *draft*
-  - Далее он преобразуется в issue
-  
-![image](https://user-images.githubusercontent.com/29037445/221422439-d4e9d890-f8b1-4b18-95f9-eaeb7581ca58.png)
-  - Заходим  issue в вашем репозитории
-![image](https://user-images.githubusercontent.com/29037445/221422634-49e1cf91-b856-444d-813f-ca69838740c1.png)
-  - Справа, в меню блок - Development Выбираете "Create branch"
-#### ВАЖНО по gitflow ветки вы создаёте из dev
-![image](https://user-images.githubusercontent.com/29037445/221422780-3e6d05ee-cbf4-427b-ae7e-a0f670d9bf4a.png)
+After all files have been transferred, the `/xlsx2dw` directory should look like the image below.
+
+![Alt text](./screenshots/plugin_directory.png?raw=true "/xlsx2dw folder")
+
+## Usage
+1. Create new page (or edit the page).
+
+![Alt text](./screenshots/creating_page_section.png?raw=true "Create page")
+
+2. Click "Import table" button in the toolbar.
+
+![Alt text](./screenshots/using_button.jpg?raw=true "Import of tables")
+
+3. Choose a table file. You can select example table from `/_test/test-tables/` folder.
+
+![Alt text](./screenshots/selecting_tables.png?raw=true "Select a table")
+
+4. Selected table is converted to DokuWiki syntax.
+
+![Alt text](./screenshots/table_in_dokusyntax.png?raw=true "DokuWiki syntax")
+
+5. The result is shown in the screenshot below.
+
+![Alt text](./screenshots/preview_table.png?raw=true "Result")
